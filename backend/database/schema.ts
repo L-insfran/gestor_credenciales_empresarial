@@ -8,18 +8,7 @@ import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
 export class CredentialSchema extends BaseModel {
-  static $columns = [
-    'companyId',
-    'createdAt',
-    'id',
-    'notas',
-    'passwordEncrypted',
-    'servicio',
-    'updatedAt',
-    'url',
-    'userId',
-    'username',
-  ] as const
+  static $columns = ['companyId', 'createdAt', 'id', 'notas', 'passwordEncrypted', 'servicio', 'updatedAt', 'url', 'userId', 'username'] as const
   $columns = CredentialSchema.$columns
   @column()
   declare companyId: number | null
@@ -43,16 +32,69 @@ export class CredentialSchema extends BaseModel {
   declare username: string
 }
 
+export class EquipoAccessSchema extends BaseModel {
+  static $columns = ['accessLevel', 'createdAt', 'equipoId', 'id', 'updatedAt', 'userId'] as const
+  $columns = EquipoAccessSchema.$columns
+  @column()
+  declare accessLevel: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare equipoId: number
+  @column({ isPrimary: true })
+  declare id: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userId: number
+}
+
+export class EquipoCredentialSchema extends BaseModel {
+  static $columns = ['createdAt', 'equipoId', 'id', 'notas', 'passwordEncrypted', 'targetUserId', 'updatedAt', 'url', 'username'] as const
+  $columns = EquipoCredentialSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare equipoId: number
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare notas: string | null
+  @column()
+  declare passwordEncrypted: string
+  @column()
+  declare targetUserId: number | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare url: string | null
+  @column()
+  declare username: string
+}
+
+export class EquipoSchema extends BaseModel {
+  static $columns = ['createdAt', 'detalles', 'id', 'isPrivate', 'nombre', 'ownerUserId', 'tipo', 'updatedAt'] as const
+  $columns = EquipoSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare detalles: any
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare isPrivate: boolean
+  @column()
+  declare nombre: string
+  @column()
+  declare ownerUserId: number
+  @column()
+  declare tipo: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class LogSchema extends BaseModel {
-  static $columns = [
-    'action',
-    'createdAt',
-    'id',
-    'ipAddress',
-    'metadata',
-    'userAgent',
-    'userId',
-  ] as const
+  static $columns = ['action', 'createdAt', 'id', 'ipAddress', 'metadata', 'userAgent', 'userId'] as const
   $columns = LogSchema.$columns
   @column()
   declare action: string
@@ -86,19 +128,7 @@ export class RefreshTokenSchema extends BaseModel {
 }
 
 export class UserSchema extends BaseModel {
-  static $columns = [
-    'apellido',
-    'companyId',
-    'createdAt',
-    'email',
-    'id',
-    'nombre',
-    'password',
-    'role',
-    'twoFactorEnabled',
-    'twoFactorSecret',
-    'updatedAt',
-  ] as const
+  static $columns = ['apellido', 'companyId', 'createdAt', 'email', 'id', 'nombre', 'password', 'role', 'twoFactorEnabled', 'twoFactorSecret', 'updatedAt'] as const
   $columns = UserSchema.$columns
   @column()
   declare apellido: string

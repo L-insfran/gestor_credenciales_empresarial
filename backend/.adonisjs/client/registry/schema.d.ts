@@ -139,18 +139,6 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['index']>>>
     }
   }
-  'users.lookup': {
-    methods: ["GET","HEAD"]
-    pattern: '/users/lookup'
-    types: {
-      body: {}
-      paramsTuple: []
-      params: {}
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/users_controller').default['lookup']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['lookup']>>>
-    }
-  }
   'users.store': {
     methods: ["POST"]
     pattern: '/users'
@@ -245,6 +233,174 @@ export interface Registry {
       query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/credentials_controller').default['destroy']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/credentials_controller').default['destroy']>>>
+    }
+  }
+  'users.lookup': {
+    methods: ["GET","HEAD"]
+    pattern: '/users/lookup'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/users_controller').default['lookup']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/users_controller').default['lookup']>>>
+    }
+  }
+  'equipos.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/equipos'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/equipos_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/equipos_controller').default['index']>>>
+    }
+  }
+  'equipos.store': {
+    methods: ["POST"]
+    pattern: '/equipos'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/equipo').storeEquipoValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/equipo').storeEquipoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/equipos_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/equipos_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'equipos.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/equipos/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/equipos_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/equipos_controller').default['show']>>>
+    }
+  }
+  'equipos.update': {
+    methods: ["PUT"]
+    pattern: '/equipos/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/equipo').updateEquipoValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/equipo').updateEquipoValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/equipos_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/equipos_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'equipos.destroy': {
+    methods: ["DELETE"]
+    pattern: '/equipos/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/equipos_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/equipos_controller').default['destroy']>>>
+    }
+  }
+  'equipo_access.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/equipos/:id/accesos'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/equipo_access_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/equipo_access_controller').default['index']>>>
+    }
+  }
+  'equipo_access.store': {
+    methods: ["POST"]
+    pattern: '/equipos/:id/accesos'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/equipo_access').grantEquipoAccessValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/equipo_access').grantEquipoAccessValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/equipo_access_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/equipo_access_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'equipo_access.destroy': {
+    methods: ["DELETE"]
+    pattern: '/equipos/:id/accesos/:userId'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; userId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/equipo_access_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/equipo_access_controller').default['destroy']>>>
+    }
+  }
+  'equipo_credentials.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/equipos/:id/credenciales'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/equipo_credentials_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/equipo_credentials_controller').default['index']>>>
+    }
+  }
+  'equipo_credentials.store': {
+    methods: ["POST"]
+    pattern: '/equipos/:id/credenciales'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/equipo_credential').storeEquipoCredentialValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/equipo_credential').storeEquipoCredentialValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/equipo_credentials_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/equipo_credentials_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'equipo_credentials.update': {
+    methods: ["PUT"]
+    pattern: '/equipos/:id/credenciales/:credId'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/equipo_credential').updateEquipoCredentialValidator)>>
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; credId: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/equipo_credential').updateEquipoCredentialValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/equipo_credentials_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/equipo_credentials_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'equipo_credentials.destroy': {
+    methods: ["DELETE"]
+    pattern: '/equipos/:id/credenciales/:credId'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue, ParamValue]
+      params: { id: ParamValue; credId: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/equipo_credentials_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/equipo_credentials_controller').default['destroy']>>>
+    }
+  }
+  'credential_migration.create_equipo_from_credential': {
+    methods: ["POST"]
+    pattern: '/migrations/credential-to-equipo'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/credential_to_equipo').createEquipoFromCredentialValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/credential_to_equipo').createEquipoFromCredentialValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/credential_migration_controller').default['createEquipoFromCredential']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/credential_migration_controller').default['createEquipoFromCredential']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
 }

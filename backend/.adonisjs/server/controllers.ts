@@ -5,7 +5,11 @@
 
 export const controllers = {
   Auth: () => import('#controllers/auth_controller'),
+  CredentialMigration: () => import('#controllers/credential_migration_controller'),
   Credentials: () => import('#controllers/credentials_controller'),
+  EquipoAccess: () => import('#controllers/equipo_access_controller'),
+  EquipoCredentials: () => import('#controllers/equipo_credentials_controller'),
+  Equipos: () => import('#controllers/equipos_controller'),
   Logs: () => import('#controllers/logs_controller'),
   TwoFactor: () => import('#controllers/two_factor_controller'),
   Users: () => import('#controllers/users_controller'),

@@ -5,11 +5,12 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-
 import CredentialForm from '../components/CredentialForm'
 import PaginationBar from '../components/PaginationBar'
 import UserForm from '../components/UserForm'
+import EquipoForm from '../components/EquipoForm'
 import TwoFactorPanel from '../components/TwoFactorPanel'
 import { api, getApiErrorMessage } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
-const SECTIONS = ['usuarios', 'credenciales', 'perfil', 'logs']
+const SECTIONS = ['usuarios', 'equipos', 'credenciales', 'perfil', 'logs']
 
 const LOG_ACTION_OPTIONS = [
   '',
@@ -20,9 +21,64 @@ const LOG_ACTION_OPTIONS = [
   'UPDATE_CREDENTIAL',
   'DELETE_CREDENTIAL',
   'VIEW_CREDENTIALS',
+  'VIEW_EQUIPOS',
+  'CREATE_EQUIPO',
+  'UPDATE_EQUIPO',
+  'DELETE_EQUIPO',
+  'GRANT_EQUIPO_ACCESS',
+  'REVOKE_EQUIPO_ACCESS',
+  'VIEW_EQUIPO_CREDENTIALS',
+  'CREATE_EQUIPO_CREDENTIAL',
+  'UPDATE_EQUIPO_CREDENTIAL',
+  'DELETE_EQUIPO_CREDENTIAL',
 ]
 
-function CredentialRow({ c, showOwner, onEdit, onDelete, visiblePwd, onTogglePwd, onCopy }) {
+function EquipoRow({ e, onOpen, onSuperadminDelete }) {
+  return (
+    <div className="flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition dark:border-surface-700 dark:bg-surface-900">
+      <button
+        type="button"
+        onClick={() => onOpen(e)}
+        className="min-w-0 flex-1 p-4 text-left transition hover:bg-slate-50 dark:hover:bg-surface-800/60"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="truncate font-semibold text-slate-900 dark:text-white">{e.nombre}</h3>
+            <p className="mt-1 text-xs font-mono text-indigo-700 dark:text-indigo-300">{e.tipo}</p>
+            {e.isPrivate && (
+              <span className="mt-2 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-slate-600 dark:bg-surface-800 dark:text-slate-300">
+                Privado
+              </span>
+            )}
+          </div>
+          <span className="text-xs text-slate-400">#{e.id}</span>
+        </div>
+      </button>
+      {onSuperadminDelete && (
+        <div className="flex shrink-0 border-l border-slate-200 dark:border-surface-700">
+          <button
+            type="button"
+            onClick={() => onSuperadminDelete(e)}
+            className="px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+          >
+            Eliminar
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CredentialRow({
+  c,
+  showOwner,
+  onEdit,
+  onDelete,
+  visiblePwd,
+  onTogglePwd,
+  onCopy,
+  onMigrateToEquipo,
+}) {
   const masked = '••••••••'
 
   return (
@@ -73,6 +129,15 @@ function CredentialRow({ c, showOwner, onEdit, onDelete, visiblePwd, onTogglePwd
           >
             Editar
           </button>
+          {onMigrateToEquipo && (
+            <button
+              type="button"
+              onClick={() => onMigrateToEquipo(c)}
+              className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-indigo-700 dark:border-surface-600 dark:text-indigo-300"
+            >
+              Crear equipo
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onDelete(c)}
@@ -132,7 +197,17 @@ export default function DashboardPage() {
   const [visiblePwd, setVisiblePwd] = useState({})
   const [credForm, setCredForm] = useState({ open: false, initial: null })
   const [userForm, setUserForm] = useState({ open: false, initial: null })
+  const [equipoForm, setEquipoForm] = useState({ open: false, initial: null })
   const [formLoading, setFormLoading] = useState(false)
+
+  const [equipos, setEquipos] = useState([])
+  const [equiposPage, setEquiposPage] = useState(1)
+  const [equiposPerPage, setEquiposPerPage] = useState(10)
+  const [equiposMeta, setEquiposMeta] = useState(null)
+  const [equiposLoading, setEquiposLoading] = useState(false)
+  const [equipoFilterNombre, setEquipoFilterNombre] = useState('')
+  const [debouncedEquipoNombre, setDebouncedEquipoNombre] = useState('')
+  const [equipoFilterTipo, setEquipoFilterTipo] = useState('')
 
   const [profileForm, setProfileForm] = useState({
     nombre: '',
@@ -225,6 +300,15 @@ export default function DashboardPage() {
   }, [credFilterServicio])
 
   useEffect(() => {
+    const t = setTimeout(() => setDebouncedEquipoNombre(equipoFilterNombre.trim()), 350)
+    return () => clearTimeout(t)
+  }, [equipoFilterNombre])
+
+  useEffect(() => {
+    setEquiposPage(1)
+  }, [debouncedEquipoNombre, equipoFilterTipo])
+
+  useEffect(() => {
     setCredPage(1)
   }, [debouncedCredServicio])
 
@@ -292,6 +376,28 @@ export default function DashboardPage() {
     }
   }, [section, loadLogs])
 
+  const loadEquipos = useCallback(async () => {
+    setEquiposLoading(true)
+    try {
+      const params = { page: equiposPage, perPage: equiposPerPage }
+      if (debouncedEquipoNombre) params.nombre = debouncedEquipoNombre
+      if (equipoFilterTipo) params.tipo = equipoFilterTipo
+      const { data } = await api.get('/equipos', { params })
+      setEquipos(data.equipos ?? [])
+      setEquiposMeta(data.meta ?? null)
+    } catch (e) {
+      flash('error', getApiErrorMessage(e))
+    } finally {
+      setEquiposLoading(false)
+    }
+  }, [equiposPage, equiposPerPage, debouncedEquipoNombre, equipoFilterTipo, flash])
+
+  useEffect(() => {
+    if (section === 'equipos') {
+      loadEquipos()
+    }
+  }, [section, loadEquipos])
+
   if (!section || !SECTIONS.includes(section)) {
     return <Navigate to="/credenciales" replace />
   }
@@ -342,6 +448,73 @@ export default function DashboardPage() {
       await loadCredentials()
     } catch (e) {
       flash('error', getApiErrorMessage(e))
+    }
+  }
+
+  const migrateCredentialToEquipo = async (c) => {
+    if (!isSuperadmin) return
+    const nombre = window.prompt('Nombre del nuevo equipo', c.servicio ?? '')
+    if (!nombre) return
+    const tipoRaw = window.prompt(
+      'Tipo del equipo (SERVIDOR, ACCESS_POINT, IMPRESORA, OTRO)',
+      'OTRO'
+    )
+    if (tipoRaw === null) return
+    const tipo = String(tipoRaw).trim().toUpperCase()
+    const allowed = ['SERVIDOR', 'ACCESS_POINT', 'IMPRESORA', 'OTRO']
+    if (!allowed.includes(tipo)) {
+      flash('error', 'Tipo inválido. Usá: SERVIDOR, ACCESS_POINT, IMPRESORA u OTRO.')
+      return
+    }
+    try {
+      await api.post('/migrations/credential-to-equipo', {
+        credentialId: c.id,
+        nombre,
+        tipo,
+        detalles: {},
+      })
+      flash('success', 'Equipo creado desde la credencial')
+    } catch (e) {
+      flash('error', getApiErrorMessage(e))
+    }
+  }
+
+  const onSaveEquipo = async (payload, id) => {
+    setFormLoading(true)
+    try {
+      if (id) {
+        await api.put(`/equipos/${id}`, payload)
+        flash('success', 'Equipo actualizado')
+      } else {
+        await api.post('/equipos', payload)
+        flash('success', 'Equipo creado')
+      }
+      setEquipoForm({ open: false, initial: null })
+      await loadEquipos()
+    } catch (e) {
+      flash('error', getApiErrorMessage(e))
+    } finally {
+      setFormLoading(false)
+    }
+  }
+
+  const onDeleteEquipo = async (e) => {
+    if (!isSuperadmin) return
+    if (
+      !window.confirm(
+        `¿Eliminar el equipo "${e.nombre}" (#${e.id})? Esta acción no se puede deshacer: se eliminarán credenciales y accesos del equipo.`
+      )
+    )
+      return
+    setFormLoading(true)
+    try {
+      await api.delete(`/equipos/${e.id}`)
+      flash('success', 'Equipo eliminado')
+      await loadEquipos()
+    } catch (err) {
+      flash('error', getApiErrorMessage(err))
+    } finally {
+      setFormLoading(false)
     }
   }
 
@@ -431,6 +604,12 @@ export default function DashboardPage() {
   const handleCredPerPageChange = (n) => {
     setCredPerPage(n)
     setCredPage(1)
+  }
+
+  const handleEquiposPageChange = (p) => setEquiposPage(p)
+  const handleEquiposPerPageChange = (n) => {
+    setEquiposPerPage(n)
+    setEquiposPage(1)
   }
 
   const handleLogsPageChange = (p) => setLogsPage(p)
@@ -854,6 +1033,7 @@ export default function DashboardPage() {
                   onCopy={copyPwd}
                   onEdit={(row) => setCredForm({ open: true, initial: row })}
                   onDelete={onDeleteCredential}
+                  onMigrateToEquipo={isSuperadmin ? migrateCredentialToEquipo : null}
                 />
               ))}
             </div>
@@ -864,6 +1044,77 @@ export default function DashboardPage() {
               perPage={credPerPage}
               onPageChange={handleCredPageChange}
               onPerPageChange={handleCredPerPageChange}
+            />
+          )}
+        </section>
+      )}
+
+      {section === 'equipos' && (
+        <section>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Equipos visibles para tu usuario. Entrá a un equipo para ver y gestionar sus credenciales.
+            </p>
+            <button
+              type="button"
+              onClick={() => setEquipoForm({ open: true, initial: null })}
+              className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+            >
+              Nuevo equipo
+            </button>
+          </div>
+
+          <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-surface-700 dark:bg-surface-800/50 sm:flex-row sm:flex-wrap sm:items-end">
+            <label className="block min-w-[12rem] flex-1 text-sm">
+              <span className="mb-1.5 block font-medium text-slate-600 dark:text-slate-400">Buscar por nombre</span>
+              <input
+                type="search"
+                value={equipoFilterNombre}
+                onChange={(e) => setEquipoFilterNombre(e.target.value)}
+                placeholder="Ej. Servidor CRM"
+                autoComplete="off"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none ring-2 ring-transparent transition focus:border-indigo-500 focus:ring-indigo-500/20 dark:border-surface-600 dark:bg-surface-900 dark:text-white"
+              />
+            </label>
+            <label className="block min-w-[12rem] text-sm">
+              <span className="mb-1.5 block font-medium text-slate-600 dark:text-slate-400">Tipo</span>
+              <select
+                value={equipoFilterTipo}
+                onChange={(e) => setEquipoFilterTipo(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-surface-600 dark:bg-surface-900 dark:text-white"
+              >
+                <option value="">Todos</option>
+                <option value="SERVIDOR">SERVIDOR</option>
+                <option value="ACCESS_POINT">ACCESS_POINT</option>
+                <option value="IMPRESORA">IMPRESORA</option>
+                <option value="OTRO">OTRO</option>
+              </select>
+            </label>
+          </div>
+
+          {equiposLoading ? (
+            <p className="text-slate-500">Cargando equipos…</p>
+          ) : equipos.length === 0 ? (
+            <p className="text-slate-500">No hay equipos para mostrar.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {equipos.map((e) => (
+                <EquipoRow
+                  key={e.id}
+                  e={e}
+                  onOpen={(row) => navigate(`/equipos/${row.id}`)}
+                  onSuperadminDelete={isSuperadmin ? onDeleteEquipo : null}
+                />
+              ))}
+            </div>
+          )}
+
+          {!equiposLoading && (
+            <PaginationBar
+              meta={equiposMeta}
+              perPage={equiposPerPage}
+              onPageChange={handleEquiposPageChange}
+              onPerPageChange={handleEquiposPerPageChange}
             />
           )}
         </section>
@@ -952,6 +1203,15 @@ export default function DashboardPage() {
         loading={formLoading}
         onClose={() => setUserForm({ open: false, initial: null })}
         onSubmit={onSaveUser}
+      />
+
+      <EquipoForm
+        open={equipoForm.open}
+        initial={equipoForm.initial}
+        loading={formLoading}
+        isSuperadmin={isSuperadmin}
+        onClose={() => setEquipoForm({ open: false, initial: null })}
+        onSubmit={onSaveEquipo}
       />
     </>
   )

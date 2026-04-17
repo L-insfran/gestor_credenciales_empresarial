@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import DashboardLayout from './components/DashboardLayout'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
+import EquipoDetailPage from './pages/EquipoDetailPage'
 
 function PrivateRoute({ children }) {
   const { user, booting } = useAuth()
@@ -39,6 +40,7 @@ export default function App() {
             }
           >
             <Route index element={<DashboardHomeRedirect />} />
+            <Route path="equipos/:id" element={<EquipoDetailPage />} />
             <Route path=":section" element={<DashboardPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

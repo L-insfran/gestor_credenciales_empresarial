@@ -70,6 +70,16 @@ function IconPanelLeft({ className }) {
   )
 }
 
+function IconServer({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+      <rect x="3" y="4" width="18" height="6" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="3" y="14" width="18" height="6" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 7h.01M7 17h.01" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export default function DashboardLayout() {
   const { user, logout, isSuperadmin } = useAuth()
   const location = useLocation()
@@ -101,6 +111,7 @@ export default function DashboardLayout() {
 
   const pageTitle = (() => {
     const s = location.pathname.split('/').filter(Boolean)[0]
+    if (s === 'equipos') return 'Equipos'
     if (s === 'usuarios') return 'Usuarios'
     if (s === 'perfil') return 'Mi perfil'
     if (s === 'logs') return 'Auditoría'
@@ -183,6 +194,16 @@ export default function DashboardLayout() {
               {!sidebarCollapsed && <span className="truncate">Auditoría</span>}
             </NavLink>
           )}
+          <NavLink
+            to="/equipos"
+            title="Equipos"
+            className={({ isActive }) =>
+              `${navBase} ${sidebarCollapsed ? navCollapsed : navExpanded} ${isActive ? linkActive : linkIdle}`
+            }
+          >
+            <IconServer className="h-5 w-5 shrink-0 opacity-90" />
+            {!sidebarCollapsed && <span className="truncate">Equipos</span>}
+          </NavLink>
           <NavLink
             to="/credenciales"
             title="Credenciales"

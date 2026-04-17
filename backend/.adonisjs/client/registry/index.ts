@@ -72,12 +72,6 @@ const routes = {
     tokens: [{"old":"/users","type":0,"val":"users","end":""}],
     types: placeholder as Registry['users.index']['types'],
   },
-  'users.lookup': {
-    methods: ["GET","HEAD"],
-    pattern: '/users/lookup',
-    tokens: [{"old":"/users/lookup","type":0,"val":"users","end":""},{"old":"/users/lookup","type":0,"val":"lookup","end":""}],
-    types: placeholder as Registry['users.lookup']['types'],
-  },
   'users.store': {
     methods: ["POST"],
     pattern: '/users',
@@ -125,6 +119,90 @@ const routes = {
     pattern: '/credentials/:id',
     tokens: [{"old":"/credentials/:id","type":0,"val":"credentials","end":""},{"old":"/credentials/:id","type":1,"val":"id","end":""}],
     types: placeholder as Registry['credentials.destroy']['types'],
+  },
+  'users.lookup': {
+    methods: ["GET","HEAD"],
+    pattern: '/users/lookup',
+    tokens: [{"old":"/users/lookup","type":0,"val":"users","end":""},{"old":"/users/lookup","type":0,"val":"lookup","end":""}],
+    types: placeholder as Registry['users.lookup']['types'],
+  },
+  'equipos.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/equipos',
+    tokens: [{"old":"/equipos","type":0,"val":"equipos","end":""}],
+    types: placeholder as Registry['equipos.index']['types'],
+  },
+  'equipos.store': {
+    methods: ["POST"],
+    pattern: '/equipos',
+    tokens: [{"old":"/equipos","type":0,"val":"equipos","end":""}],
+    types: placeholder as Registry['equipos.store']['types'],
+  },
+  'equipos.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/equipos/:id',
+    tokens: [{"old":"/equipos/:id","type":0,"val":"equipos","end":""},{"old":"/equipos/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['equipos.show']['types'],
+  },
+  'equipos.update': {
+    methods: ["PUT"],
+    pattern: '/equipos/:id',
+    tokens: [{"old":"/equipos/:id","type":0,"val":"equipos","end":""},{"old":"/equipos/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['equipos.update']['types'],
+  },
+  'equipos.destroy': {
+    methods: ["DELETE"],
+    pattern: '/equipos/:id',
+    tokens: [{"old":"/equipos/:id","type":0,"val":"equipos","end":""},{"old":"/equipos/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['equipos.destroy']['types'],
+  },
+  'equipo_access.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/equipos/:id/accesos',
+    tokens: [{"old":"/equipos/:id/accesos","type":0,"val":"equipos","end":""},{"old":"/equipos/:id/accesos","type":1,"val":"id","end":""},{"old":"/equipos/:id/accesos","type":0,"val":"accesos","end":""}],
+    types: placeholder as Registry['equipo_access.index']['types'],
+  },
+  'equipo_access.store': {
+    methods: ["POST"],
+    pattern: '/equipos/:id/accesos',
+    tokens: [{"old":"/equipos/:id/accesos","type":0,"val":"equipos","end":""},{"old":"/equipos/:id/accesos","type":1,"val":"id","end":""},{"old":"/equipos/:id/accesos","type":0,"val":"accesos","end":""}],
+    types: placeholder as Registry['equipo_access.store']['types'],
+  },
+  'equipo_access.destroy': {
+    methods: ["DELETE"],
+    pattern: '/equipos/:id/accesos/:userId',
+    tokens: [{"old":"/equipos/:id/accesos/:userId","type":0,"val":"equipos","end":""},{"old":"/equipos/:id/accesos/:userId","type":1,"val":"id","end":""},{"old":"/equipos/:id/accesos/:userId","type":0,"val":"accesos","end":""},{"old":"/equipos/:id/accesos/:userId","type":1,"val":"userId","end":""}],
+    types: placeholder as Registry['equipo_access.destroy']['types'],
+  },
+  'equipo_credentials.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/equipos/:id/credenciales',
+    tokens: [{"old":"/equipos/:id/credenciales","type":0,"val":"equipos","end":""},{"old":"/equipos/:id/credenciales","type":1,"val":"id","end":""},{"old":"/equipos/:id/credenciales","type":0,"val":"credenciales","end":""}],
+    types: placeholder as Registry['equipo_credentials.index']['types'],
+  },
+  'equipo_credentials.store': {
+    methods: ["POST"],
+    pattern: '/equipos/:id/credenciales',
+    tokens: [{"old":"/equipos/:id/credenciales","type":0,"val":"equipos","end":""},{"old":"/equipos/:id/credenciales","type":1,"val":"id","end":""},{"old":"/equipos/:id/credenciales","type":0,"val":"credenciales","end":""}],
+    types: placeholder as Registry['equipo_credentials.store']['types'],
+  },
+  'equipo_credentials.update': {
+    methods: ["PUT"],
+    pattern: '/equipos/:id/credenciales/:credId',
+    tokens: [{"old":"/equipos/:id/credenciales/:credId","type":0,"val":"equipos","end":""},{"old":"/equipos/:id/credenciales/:credId","type":1,"val":"id","end":""},{"old":"/equipos/:id/credenciales/:credId","type":0,"val":"credenciales","end":""},{"old":"/equipos/:id/credenciales/:credId","type":1,"val":"credId","end":""}],
+    types: placeholder as Registry['equipo_credentials.update']['types'],
+  },
+  'equipo_credentials.destroy': {
+    methods: ["DELETE"],
+    pattern: '/equipos/:id/credenciales/:credId',
+    tokens: [{"old":"/equipos/:id/credenciales/:credId","type":0,"val":"equipos","end":""},{"old":"/equipos/:id/credenciales/:credId","type":1,"val":"id","end":""},{"old":"/equipos/:id/credenciales/:credId","type":0,"val":"credenciales","end":""},{"old":"/equipos/:id/credenciales/:credId","type":1,"val":"credId","end":""}],
+    types: placeholder as Registry['equipo_credentials.destroy']['types'],
+  },
+  'credential_migration.create_equipo_from_credential': {
+    methods: ["POST"],
+    pattern: '/migrations/credential-to-equipo',
+    tokens: [{"old":"/migrations/credential-to-equipo","type":0,"val":"migrations","end":""},{"old":"/migrations/credential-to-equipo","type":0,"val":"credential-to-equipo","end":""}],
+    types: placeholder as Registry['credential_migration.create_equipo_from_credential']['types'],
   },
 } as const satisfies Record<string, AdonisEndpoint>
 
