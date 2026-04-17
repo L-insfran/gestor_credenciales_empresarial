@@ -1,0 +1,24 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --color-surface-950: #0a0b0f;
+  --color-surface-900: #111318;
+  --color-surface-800: #1a1d24;
+  --color-surface-700: #252830;
+  --color-accent: #6366f1;
+  --color-accent-hover: #818cf8;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+}
