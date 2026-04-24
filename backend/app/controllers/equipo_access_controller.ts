@@ -1,10 +1,13 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import db from '@adonisjs/lucid/services/db'
 import Equipo from '#models/equipo'
 import EquipoAccess from '#models/equipo_access'
+import EquipoCredentialViewer from '#models/equipo_credential_viewer'
 import User from '#models/user'
 import { grantEquipoAccessValidator } from '#validators/equipo_access'
 import LoggerService from '#services/logger_service'
 import { AuditAction } from '#constants/audit_actions'
+import EquipoAclService from '#services/equipo_acl_service'
 
 function accessDto(row: EquipoAccess) {
   return {
@@ -23,7 +26,11 @@ export default class EquipoAccessController {
     const equipo = await Equipo.find(equipoId)
     if (!equipo) return response.notFound({ message: 'Equipo no encontrado' })
 
-    if (jwtUser!.role !== 'SUPERADMIN' && equipo.ownerUserId !== jwtUser!.id) {
+    const canList =
+      jwtUser!.role === 'SUPERADMIN' ||
+      equipo.ownerUserId === jwtUser!.id ||
+      (await EquipoAclService.canAdmin(jwtUser!, equipo))
+    if (!canList) {
       return response.forbidden({ message: 'No autorizado' })
     }
 
@@ -97,6 +104,18 @@ export default class EquipoAccessController {
     }
 
     await access.delete()
+
+    await EquipoCredentialViewer.query()
+      .whereIn(
+        'equipo_credential_id',
+        db
+          .from('equipo_credentials')
+          .select('id')
+          .where('equipo_id', equipoId)
+          .whereNull('target_user_id')
+      )
+      .where('user_id', targetUserId)
+      .delete()
 
     await LoggerService.log(jwtUser!.id, AuditAction.REVOKE_EQUIPO_ACCESS, request, {
       equipoId,

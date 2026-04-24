@@ -114,9 +114,41 @@ export function readJwtExpiryMs(accessToken) {
   }
 }
 
+/**
+ * Alineado con 422 de Adonis/Vine: { message, errors: [...] }.
+ * No usar solo `message` ("Error de validación") si hay detalle en `errors`.
+ */
+function formatApiValidationErrors(data) {
+  const raw = data?.errors
+  if (raw == null) return null
+  if (Array.isArray(raw) && raw.length) {
+    const parts = raw.map((e) => {
+      if (typeof e === 'string') return e
+      if (e && typeof e === 'object' && e.message) {
+        const f = e.field
+        return f && typeof f === 'string' ? `${f}: ${e.message}` : e.message
+      }
+      return null
+    })
+    const joined = parts.filter(Boolean).join(' · ')
+    return joined || null
+  }
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    return Object.entries(raw)
+      .map(([k, v]) => {
+        if (Array.isArray(v)) return `${k}: ${v.join(', ')}`
+        return `${k}: ${v}`
+      })
+      .join(' · ')
+  }
+  return null
+}
+
 export function getApiErrorMessage(err) {
   const d = err.response?.data
   if (!d) return err.message || 'Error de red'
+  const fromValidation = formatApiValidationErrors(d)
+  if (fromValidation) return fromValidation
   if (typeof d.message === 'string') return d.message
   if (d.errors) return 'Revisa los datos del formulario'
   return 'Error en la solicitud'

@@ -29,6 +29,9 @@ export default class User extends compose(BaseModel, withAuthFinder(hash)) {
   @column()
   declare role: UserRole
 
+  @column()
+  declare activo: boolean
+
   @column({ columnName: 'company_id' })
   declare companyId: number | null
 

@@ -49,6 +49,21 @@ export class EquipoAccessSchema extends BaseModel {
   declare userId: number
 }
 
+export class EquipoCredentialViewerSchema extends BaseModel {
+  static $columns = ['createdAt', 'equipoCredentialId', 'id', 'updatedAt', 'userId'] as const
+  $columns = EquipoCredentialViewerSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare equipoCredentialId: number
+  @column({ isPrimary: true })
+  declare id: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userId: number
+}
+
 export class EquipoCredentialSchema extends BaseModel {
   static $columns = ['createdAt', 'equipoId', 'id', 'notas', 'passwordEncrypted', 'targetUserId', 'updatedAt', 'url', 'username'] as const
   $columns = EquipoCredentialSchema.$columns
@@ -128,8 +143,10 @@ export class RefreshTokenSchema extends BaseModel {
 }
 
 export class UserSchema extends BaseModel {
-  static $columns = ['apellido', 'companyId', 'createdAt', 'email', 'id', 'nombre', 'password', 'role', 'twoFactorEnabled', 'twoFactorSecret', 'updatedAt'] as const
+  static $columns = ['activo', 'apellido', 'companyId', 'createdAt', 'email', 'id', 'nombre', 'password', 'role', 'twoFactorEnabled', 'twoFactorSecret', 'updatedAt'] as const
   $columns = UserSchema.$columns
+  @column()
+  declare activo: boolean
   @column()
   declare apellido: string
   @column()

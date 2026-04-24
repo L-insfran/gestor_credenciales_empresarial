@@ -99,6 +99,7 @@ export default class EquiposController {
     if (!equipo) {
       return response.notFound({ message: 'Equipo no encontrado' })
     }
+    await equipo.load('owner', (q) => q.select('id', 'email', 'nombre', 'apellido'))
 
     if (jwtUser!.role !== 'SUPERADMIN') {
       const allowed =
@@ -124,6 +125,14 @@ export default class EquiposController {
         ...equipoDto(equipo),
         canEdit,
         canManageAssignments,
+        owner: equipo.owner
+          ? {
+              id: equipo.owner.id,
+              email: equipo.owner.email,
+              nombre: equipo.owner.nombre,
+              apellido: equipo.owner.apellido,
+            }
+          : null,
       },
     })
   }

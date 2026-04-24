@@ -25,6 +25,7 @@ function authUserDto(user: User) {
     apellido: user.apellido,
     email: user.email,
     role: user.role,
+    activo: user.activo,
     companyId: user.companyId,
     initials: user.initials,
     createdAt: user.createdAt,
@@ -75,6 +76,11 @@ export default class AuthController {
       throw error
     }
 
+    if (!user.activo) {
+      await LoggerService.log(user.id, AuditAction.LOGIN_FAILED, request, { reason: 'account_inactive' })
+      return response.unauthorized({ message: 'Tu cuenta está deshabilitada. Contactá al administrador.' })
+    }
+
     if (user.twoFactorEnabled) {
       const pendingToken = signTwoFactorPendingToken(user.id)
       return response.ok({
@@ -111,6 +117,10 @@ export default class AuthController {
       return response.unauthorized({ message: 'Usuario no válido para 2FA' })
     }
 
+    if (!user.activo) {
+      return response.unauthorized({ message: 'Tu cuenta está deshabilitada. Contactá al administrador.' })
+    }
+
     if (!TwoFactorService.verifyForEnabledUser(user, code)) {
       await LoggerService.log(user.id, AuditAction.LOGIN_FAILED, request, {
         reason: 'invalid_totp',
@@ -139,6 +149,9 @@ export default class AuthController {
     const user = await User.find(userId)
     if (!user) {
       return response.unauthorized({ message: 'Usuario no encontrado' })
+    }
+    if (!user.activo) {
+      return response.unauthorized({ message: 'Tu cuenta está deshabilitada. Contactá al administrador.' })
     }
     const { raw: rotatedRefresh } = await RefreshTokenService.issueForUser(user.id)
     const accessTokenRefresh = signAccessToken({ sub: user.id, role: user.role })

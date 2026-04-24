@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 
-const USER_SORT_COLUMNS = ['nombre', 'email', 'role']
+const USER_SORT_COLUMNS = ['nombre', 'email', 'role', 'activo']
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import CredentialForm from '../components/CredentialForm'
 import PaginationBar from '../components/PaginationBar'
 import UserForm from '../components/UserForm'
+import UserImportModal from '../components/UserImportModal'
 import EquipoForm from '../components/EquipoForm'
 import TwoFactorPanel from '../components/TwoFactorPanel'
 import { api, getApiErrorMessage } from '../services/api'
@@ -197,6 +198,7 @@ export default function DashboardPage() {
   const [visiblePwd, setVisiblePwd] = useState({})
   const [credForm, setCredForm] = useState({ open: false, initial: null })
   const [userForm, setUserForm] = useState({ open: false, initial: null })
+  const [userImportOpen, setUserImportOpen] = useState(false)
   const [equipoForm, setEquipoForm] = useState({ open: false, initial: null })
   const [formLoading, setFormLoading] = useState(false)
 
@@ -772,13 +774,22 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Alta, edición y eliminación de cuentas del sistema.
             </p>
-            <button
-              type="button"
-              onClick={() => setUserForm({ open: true, initial: null })}
-              className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
-            >
-              Nuevo usuario
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setUserImportOpen(true)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-surface-600 dark:bg-surface-800 dark:text-slate-200 dark:hover:bg-surface-700"
+              >
+                Importar desde Excel
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserForm({ open: true, initial: null })}
+                className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+              >
+                Nuevo usuario
+              </button>
+            </div>
           </div>
           <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-surface-700">
             <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/80 px-5 py-4 dark:border-surface-700 dark:bg-surface-800/50 sm:flex-row sm:flex-wrap sm:items-end">
@@ -899,13 +910,43 @@ export default function DashboardPage() {
                         </span>
                       </button>
                     </th>
+                    <th className="px-5 py-3.5 font-medium text-slate-500 dark:text-slate-400">
+                      <button
+                        type="button"
+                        onClick={() => handleUserSort('activo')}
+                        className="inline-flex items-center gap-1.5 rounded-lg text-left font-medium text-slate-500 transition hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+                        title={userSortBy === 'activo' ? (userSortOrder === 'asc' ? 'Inactivos primero' : 'Activos primero') : 'Ordenar por estado'}
+                      >
+                        Estado
+                        <span className="inline-flex flex-col leading-[0.55] text-[9px]" aria-hidden>
+                          <span
+                            className={
+                              userSortBy === 'activo' && userSortOrder === 'asc'
+                                ? 'text-indigo-600 dark:text-indigo-400'
+                                : 'text-slate-300 dark:text-slate-600'
+                            }
+                          >
+                            ▲
+                          </span>
+                          <span
+                            className={
+                              userSortBy === 'activo' && userSortOrder === 'desc'
+                                ? 'text-indigo-600 dark:text-indigo-400'
+                                : 'text-slate-300 dark:text-slate-600'
+                            }
+                          >
+                            ▼
+                          </span>
+                        </span>
+                      </button>
+                    </th>
                     <th className="px-5 py-3.5 font-medium text-slate-500 dark:text-slate-400">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white dark:divide-surface-700 dark:bg-surface-900">
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-5 py-10 text-center text-slate-500 dark:text-slate-400">
+                      <td colSpan={5} className="px-5 py-10 text-center text-slate-500 dark:text-slate-400">
                         No hay usuarios en esta página.
                       </td>
                     </tr>
@@ -925,6 +966,17 @@ export default function DashboardPage() {
                             }`}
                           >
                             {u.role}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide ${
+                              u.activo !== false
+                                ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300'
+                                : 'bg-slate-200 text-slate-600 dark:bg-surface-800 dark:text-slate-500'
+                            }`}
+                          >
+                            {u.activo !== false ? 'Activo' : 'Inactivo'}
                           </span>
                         </td>
                         <td className="px-5 py-3.5">
@@ -1203,6 +1255,18 @@ export default function DashboardPage() {
         loading={formLoading}
         onClose={() => setUserForm({ open: false, initial: null })}
         onSubmit={onSaveUser}
+      />
+
+      <UserImportModal
+        open={userImportOpen}
+        onClose={() => setUserImportOpen(false)}
+        flash={flash}
+        onImported={({ created }) => {
+          if (created > 0) {
+            void loadUsers()
+            void loadUserOptions()
+          }
+        }}
       />
 
       <EquipoForm

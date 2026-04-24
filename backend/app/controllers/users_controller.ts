@@ -14,6 +14,7 @@ function publicUser(user: User) {
     apellido: user.apellido,
     email: user.email,
     role: user.role,
+    activo: user.activo,
     companyId: user.companyId,
     initials: user.initials,
     createdAt: user.createdAt,
@@ -21,7 +22,7 @@ function publicUser(user: User) {
   }
 }
 
-const USER_LIST_SORT_COLUMNS = ['nombre', 'apellido', 'email', 'role'] as const
+const USER_LIST_SORT_COLUMNS = ['nombre', 'apellido', 'email', 'role', 'activo'] as const
 type UserListSortColumn = (typeof USER_LIST_SORT_COLUMNS)[number]
 
 /** Escapa `%`, `_` y `\` para usar en ILIKE … ESCAPE '\\'. */
@@ -69,7 +70,10 @@ export default class UsersController {
    * Listado compacto para selects (formularios), sin paginar.
    */
   async lookup({ response }: HttpContext) {
-    const rows = await User.query().select('id', 'nombre', 'apellido', 'email').orderBy('id', 'asc')
+    const rows = await User.query()
+      .where('activo', true)
+      .select('id', 'nombre', 'apellido', 'email')
+      .orderBy('id', 'asc')
     return response.ok({
       users: rows.map((u) => ({
         id: u.id,
@@ -88,6 +92,7 @@ export default class UsersController {
       email: data.email,
       password: data.password,
       role: data.role,
+      activo: data.activo !== false,
       companyId: null,
       twoFactorSecret: null,
       twoFactorEnabled: false,
@@ -95,7 +100,7 @@ export default class UsersController {
     return response.created({ user: publicUser(user) })
   }
 
-  async update({ request, response, params }: HttpContext) {
+  async update({ request, response, params, jwtUser }: HttpContext) {
     const id = Number(params.id)
     const user = await User.find(id)
     if (!user) {
@@ -103,6 +108,10 @@ export default class UsersController {
     }
 
     const data = await request.validateUsing(updateUserValidator)
+
+    if (data.activo === false && id === jwtUser!.id) {
+      return response.badRequest({ message: 'No podés deshabilitar tu propia cuenta' })
+    }
 
     if (data.email && data.email !== user.email) {
       const taken = await User.query().where('email', data.email).whereNot('id', user.id).first()
@@ -116,6 +125,7 @@ export default class UsersController {
     if (data.role !== undefined) user.role = data.role
     if (data.companyId !== undefined) user.companyId = data.companyId
     if (data.password) user.password = data.password
+    if (data.activo !== undefined) user.activo = data.activo
 
     await user.save()
     return response.ok({ user: publicUser(user) })

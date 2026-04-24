@@ -14,6 +14,7 @@ export const storeUserValidator = vine.create({
   email: emailRule().unique({ table: 'users', column: 'email' }),
   password: passwordRule(),
   role: vine.enum(['USER', 'SUPERADMIN'] as const),
+  activo: vine.boolean().optional(),
 })
 
 export const updateUserValidator = vine.create({
@@ -23,6 +24,7 @@ export const updateUserValidator = vine.create({
   password: passwordRule().optional(),
   role: vine.enum(['USER', 'SUPERADMIN'] as const).optional(),
   companyId: vine.number().positive().optional().nullable(),
+  activo: vine.boolean().optional(),
 })
 
 /** Actualización de perfil (usuario autenticado, sin cambiar rol). */

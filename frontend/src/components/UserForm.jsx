@@ -6,6 +6,7 @@ const empty = {
   email: '',
   password: '',
   role: 'USER',
+  activo: true,
 }
 
 export default function UserForm({ open, onClose, onSubmit, loading, initial }) {
@@ -20,6 +21,7 @@ export default function UserForm({ open, onClose, onSubmit, loading, initial }) 
         email: initial.email ?? '',
         password: '',
         role: initial.role ?? 'USER',
+        activo: initial.activo !== false,
       })
     } else {
       setForm(empty)
@@ -29,8 +31,8 @@ export default function UserForm({ open, onClose, onSubmit, loading, initial }) 
   if (!open) return null
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setForm((f) => ({ ...f, [name]: value }))
+    const { name, value, type, checked } = e.target
+    setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }))
   }
 
   const handleSubmit = (e) => {
@@ -40,6 +42,7 @@ export default function UserForm({ open, onClose, onSubmit, loading, initial }) 
       apellido: form.apellido.trim(),
       email: form.email.trim(),
       role: form.role,
+      activo: form.activo,
     }
     if (form.password.trim()) {
       payload.password = form.password
@@ -109,6 +112,16 @@ export default function UserForm({ open, onClose, onSubmit, loading, initial }) 
               <option value="USER">USER</option>
               <option value="SUPERADMIN">SUPERADMIN</option>
             </select>
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="activo"
+              checked={form.activo}
+              onChange={handleChange}
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-surface-600"
+            />
+            <span className="text-slate-600 dark:text-slate-400">Usuario activo (puede iniciar sesión)</span>
           </label>
           <div className="mt-4 flex justify-end gap-2">
             <button

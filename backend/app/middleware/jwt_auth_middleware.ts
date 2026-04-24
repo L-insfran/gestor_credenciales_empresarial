@@ -23,6 +23,10 @@ export default class JwtAuthMiddleware {
       return ctx.response.unauthorized({ message: 'Usuario no válido' })
     }
 
+    if (!user.activo) {
+      return ctx.response.unauthorized({ message: 'Tu cuenta está deshabilitada. Contactá al administrador.' })
+    }
+
     ctx.jwtUser = user
     return next()
   }
