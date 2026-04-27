@@ -325,6 +325,7 @@ export default function EquipoDetailPage() {
   const [importCredOpen, setImportCredOpen] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [accessListSearch, setAccessListSearch] = useState('')
+  const [credListSearch, setCredListSearch] = useState('')
   const [detailTab, setDetailTab] = useState('creds')
   const [credPage, setCredPage] = useState(1)
   const [accessPage, setAccessPage] = useState(1)
@@ -474,19 +475,33 @@ export default function EquipoDetailPage() {
     })
   }, [accesses, accessListSearch])
 
-  const credTotalPages = useMemo(
-    () => Math.max(1, Math.ceil(credentials.length / CREDENTIALS_PAGE_SIZE)),
-    [credentials.length]
-  )
+  const filteredCredentials = useMemo(() => {
+    const q = credListSearch.trim().toLowerCase()
+    if (!q) return credentials
+    return credentials.filter((c) => {
+      const username = String(c.username ?? '').toLowerCase()
+      const url = String(c.url ?? '').toLowerCase()
+      const notas = String(c.notas ?? '').toLowerCase()
+      return username.includes(q) || url.includes(q) || notas.includes(q) || String(c.id).includes(q)
+    })
+  }, [credentials, credListSearch])
+
+  const credListTotal = filteredCredentials.length
+
+  const credTotalPages = useMemo(() => Math.max(1, Math.ceil(credListTotal / CREDENTIALS_PAGE_SIZE)), [credListTotal])
 
   useEffect(() => {
     if (credPage > credTotalPages) setCredPage(credTotalPages)
   }, [credPage, credTotalPages])
 
+  useEffect(() => {
+    setCredPage(1)
+  }, [credListSearch])
+
   const pagedCredentials = useMemo(() => {
     const start = (credPage - 1) * CREDENTIALS_PAGE_SIZE
-    return credentials.slice(start, start + CREDENTIALS_PAGE_SIZE)
-  }, [credentials, credPage])
+    return filteredCredentials.slice(start, start + CREDENTIALS_PAGE_SIZE)
+  }, [filteredCredentials, credPage])
 
   const accessListTotal = filteredAccesses.length
   const accessTotalPages = useMemo(
@@ -755,10 +770,52 @@ export default function EquipoDetailPage() {
                 )}
               </h3>
             )}
+            {!loading && credentials.length > 0 && (
+              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+                <h3 className="sr-only">Credenciales del equipo</h3>
+                <div className="flex w-full min-w-0 flex-col gap-1 sm:ml-auto sm:max-w-md">
+                  <label className="sr-only" htmlFor="equipo-credentials-search">
+                    Filtrar credenciales del equipo
+                  </label>
+                  <input
+                    id="equipo-credentials-search"
+                    type="search"
+                    value={credListSearch}
+                    onChange={(e) => setCredListSearch(e.target.value)}
+                    placeholder="Buscar por usuario, enlace o notas…"
+                    autoComplete="off"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-indigo-500/30 placeholder:text-slate-400 focus:ring-2 dark:border-surface-600 dark:bg-surface-800 dark:text-white"
+                  />
+                  {credListSearch.trim() && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Coinciden {filteredCredentials.length} de {credentials.length}
+                      <button
+                        type="button"
+                        onClick={() => setCredListSearch('')}
+                        className="ml-2 font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                      >
+                        Limpiar
+                      </button>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
             {loading ? (
               <p className="text-slate-500">Cargando…</p>
             ) : credentials.length === 0 ? (
               <p className="text-slate-500">Todavía no hay credenciales.</p>
+            ) : filteredCredentials.length === 0 ? (
+              <p className="text-slate-500">
+                Ninguna credencial coincide con “{credListSearch.trim()}”.{' '}
+                <button
+                  type="button"
+                  onClick={() => setCredListSearch('')}
+                  className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                >
+                  Quitar filtro
+                </button>
+              </p>
             ) : (
               <CredentialsTable
                 credentials={pagedCredentials}
@@ -771,7 +828,7 @@ export default function EquipoDetailPage() {
                   <TablePagination
                     page={credPage}
                     pageSize={CREDENTIALS_PAGE_SIZE}
-                    total={credentials.length}
+                    total={credListTotal}
                     onPageChange={setCredPage}
                   />
                 }
