@@ -194,8 +194,6 @@ export default function EquipoCredentialImportModal({
   isSuperadmin = false,
   currentUser = null,
   canGrantEquipoAccess = false,
-  equipoOwnerId = null,
-  existingAccessUserIds = [],
 }) {
   const [fileLabel, setFileLabel] = useState('')
   const [preview, setPreview] = useState([])
@@ -287,89 +285,78 @@ export default function EquipoCredentialImportModal({
     setImporting(true)
     setImportResult(null)
     setImportProgress({ current: 0, total: validRows.length })
-    const failed = []
-    const succeeded = []
-    const localAccess = new Set(
-      Array.isArray(existingAccessUserIds) ? existingAccessUserIds.map(Number) : []
-    )
-    if (canGrantEquipoAccess) {
-      try {
-        const { data: acc } = await api.get(`/equipos/${equipoId}/accesos`)
-        for (const a of acc.accesses ?? []) {
-          if (a.userId) localAccess.add(a.userId)
-        }
-      } catch {
-        // Seguimos con el listado ya cargado en la página
-      }
-    }
-    let accessGranted = 0
-    const ownerId = equipoOwnerId != null && !Number.isNaN(Number(equipoOwnerId)) ? Number(equipoOwnerId) : null
-    for (let i = 0; i < validRows.length; i++) {
-      const r = validRows[i]
-      const targetUserId = resolveUserId(r.email)
-      if (targetUserId == null) {
-        failed.push({ sheetRow: r.sheetRow, email: r.email, message: 'No se pudo resolver el usuario' })
-        setImportProgress({ current: i + 1, total: validRows.length })
-        continue
-      }
-      const accessLevel = r.teamAccessLevel === 'EDIT' ? 'EDIT' : 'VIEW'
-      const isOwner = ownerId != null && targetUserId === ownerId
-      const needsGrant = canGrantEquipoAccess && !isOwner && !localAccess.has(targetUserId)
-      if (needsGrant) {
-        try {
-          await api.post(`/equipos/${equipoId}/accesos`, { userId: targetUserId, accessLevel })
-          localAccess.add(targetUserId)
-          accessGranted++
-        } catch (e) {
-          failed.push({
-            sheetRow: r.sheetRow,
-            email: r.email,
-            message: `Acceso al equipo: ${getApiErrorMessage(e)}`,
-          })
-          setImportProgress({ current: i + 1, total: validRows.length })
-          continue
-        }
-      }
-      const payload = {
-        username: r.userLogin,
-        password: r.password,
-        url: r.url,
-        notas: r.notas,
-        targetUserId,
-      }
-      try {
-        await api.post(`/equipos/${equipoId}/credenciales`, payload)
-        succeeded.push({
+    try {
+      const payloadRows = validRows.map((r) => {
+        const targetUserId = resolveUserId(r.email)
+        return {
           sheetRow: r.sheetRow,
           email: r.email,
           userLogin: r.userLogin,
+          password: r.password,
+          accessLevel: r.teamAccessLevel === 'EDIT' ? 'EDIT' : 'VIEW',
+          url: r.url,
+          notas: r.notas,
+          targetUserId,
+        }
+      })
+
+      const unresolved = payloadRows.find((r) => r.targetUserId == null)
+      if (unresolved) {
+        setImportResult({
+          created: 0,
+          failed: [
+            {
+              sheetRow: unresolved.sheetRow,
+              email: unresolved.email,
+              message: 'No se pudo resolver el usuario',
+            },
+          ],
+          succeeded: [],
+          totalAttempted: 0,
+          skippedInPreview: invalidCount,
+          accessGranted: 0,
         })
-      } catch (e) {
-        failed.push({ sheetRow: r.sheetRow, email: r.email, message: getApiErrorMessage(e) })
+        flash?.('error', 'No se pudo completar la importación. Hay filas con email no resoluble.')
+        return
       }
-      setImportProgress({ current: i + 1, total: validRows.length })
-    }
-    const result = {
-      created: succeeded.length,
-      failed,
-      succeeded,
-      totalAttempted: validRows.length,
-      skippedInPreview: invalidCount,
-      accessGranted,
-    }
-    setImportResult(result)
-    setImporting(false)
-    if (onImported) onImported({ created: succeeded.length, failed, totalAttempted: validRows.length })
-    if (failed.length === 0) {
-      const extra =
-        canGrantEquipoAccess && accessGranted > 0
-          ? ` Se otorgó acceso al equipo a ${accessGranted} usuario(s).`
-          : ''
-      flash?.('success', `Se importaron ${succeeded.length} credencial(es) correctamente.${extra}`)
-    } else if (succeeded.length > 0) {
-      flash?.('error', `Importación parcial: ${succeeded.length} creadas, ${failed.length} con error. Revisá el resumen.`)
-    } else {
-      flash?.('error', 'No se pudo completar la importación. Revisá el resumen de errores.')
+
+      const { data } = await api.post(`/equipos/${equipoId}/credenciales/import`, {
+        grantEquipoAccess: Boolean(canGrantEquipoAccess),
+        rows: payloadRows,
+      })
+
+      setImportProgress({ current: validRows.length, total: validRows.length })
+
+      const result = {
+        created: data.created ?? 0,
+        failed: data.failed ?? [],
+        succeeded: data.succeeded ?? [],
+        totalAttempted: data.totalAttempted ?? payloadRows.length,
+        skippedInPreview: invalidCount,
+        accessGranted: data.accessGranted ?? 0,
+      }
+      setImportResult(result)
+
+      if ((result.failed?.length ?? 0) === 0) {
+        const extra =
+          canGrantEquipoAccess && (result.accessGranted ?? 0) > 0
+            ? ` Se otorgó acceso al equipo a ${result.accessGranted} usuario(s).`
+            : ''
+        flash?.('success', `Se importaron ${result.created} credencial(es) correctamente.${extra}`)
+      } else if ((result.created ?? 0) > 0) {
+        flash?.(
+          'error',
+          `Importación parcial: ${result.created} creadas, ${result.failed.length} con error. Revisá el resumen.`
+        )
+      } else {
+        flash?.('error', 'No se pudo completar la importación. Revisá el resumen de errores.')
+      }
+
+      if (onImported) onImported({ created: result.created, failed: result.failed, totalAttempted: result.totalAttempted })
+    } catch (e) {
+      flash?.('error', getApiErrorMessage(e))
+    } finally {
+      setImporting(false)
     }
   }
 

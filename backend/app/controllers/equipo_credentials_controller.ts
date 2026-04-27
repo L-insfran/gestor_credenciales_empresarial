@@ -7,6 +7,7 @@ import EquipoCredential from '#models/equipo_credential'
 import EquipoCredentialViewer from '#models/equipo_credential_viewer'
 import User from '#models/user'
 import { storeEquipoCredentialValidator, updateEquipoCredentialValidator } from '#validators/equipo_credential'
+import { importEquipoCredentialsValidator } from '#validators/equipo_credential_import'
 import { decrypt, encrypt } from '#services/encryption_service'
 import LoggerService from '#services/logger_service'
 import { AuditAction } from '#constants/audit_actions'
@@ -85,6 +86,11 @@ async function syncViewers(
       { client }
     )
   }
+}
+
+function maxAccessLevel(a: 'VIEW' | 'EDIT', b: 'VIEW' | 'EDIT'): 'VIEW' | 'EDIT' {
+  if (a === 'EDIT' || b === 'EDIT') return 'EDIT'
+  return 'VIEW'
 }
 
 export default class EquipoCredentialsController {
@@ -239,6 +245,107 @@ export default class EquipoCredentialsController {
     })
 
     return response.created({ credential: toDto(cred) })
+  }
+
+  /**
+   * Importación masiva (Excel) — SOLO SUPERADMIN (proteger con middleware.superadmin).
+   * Recibe filas ya validadas en el frontend, y responde con succeeded/failed para el resumen.
+   */
+  async importExcel({ params, request, response, jwtUser }: HttpContext) {
+    const equipoId = Number(params.id)
+    const equipo = await Equipo.find(equipoId)
+    if (!equipo) return response.notFound({ message: 'Equipo no encontrado' })
+
+    const data = await request.validateUsing(importEquipoCredentialsValidator)
+    const grantEquipoAccess = Boolean(data.grantEquipoAccess)
+
+    const succeeded: { sheetRow?: number; email?: string; userLogin: string; targetUserId: number }[] = []
+    const failed: { sheetRow?: number; email?: string; userLogin?: string; targetUserId?: number; message: string }[] = []
+    let accessGranted = 0
+
+    await db.transaction(async (trx) => {
+      for (const r of data.rows) {
+        try {
+          const target = await User.find(r.targetUserId, { client: trx })
+          if (!target) {
+            failed.push({
+              sheetRow: r.sheetRow,
+              email: r.email,
+              userLogin: r.userLogin,
+              targetUserId: r.targetUserId,
+              message: 'Usuario destino no encontrado',
+            })
+            continue
+          }
+
+          if (grantEquipoAccess && target.id !== equipo.ownerUserId) {
+            const desired = (r.accessLevel ?? 'VIEW') as 'VIEW' | 'EDIT'
+            const existing = await EquipoAccess.query({ client: trx })
+              .where('equipo_id', equipoId)
+              .where('user_id', target.id)
+              .first()
+            if (!existing) {
+              await EquipoAccess.create(
+                { equipoId, userId: target.id, accessLevel: desired },
+                { client: trx }
+              )
+              accessGranted++
+            } else {
+              const next = maxAccessLevel(existing.accessLevel as 'VIEW' | 'EDIT', desired)
+              if (next !== existing.accessLevel) {
+                existing.accessLevel = next
+                existing.useTransaction(trx)
+                await existing.save()
+              }
+            }
+          }
+
+          await EquipoCredential.create(
+            {
+              equipoId,
+              targetUserId: target.id,
+              username: r.userLogin,
+              passwordEncrypted: encrypt(r.password),
+              url: r.url ?? null,
+              notas: r.notas ?? null,
+            },
+            { client: trx }
+          )
+
+          succeeded.push({
+            sheetRow: r.sheetRow,
+            email: r.email,
+            userLogin: r.userLogin,
+            targetUserId: target.id,
+          })
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : 'Error al importar'
+          failed.push({
+            sheetRow: r.sheetRow,
+            email: r.email,
+            userLogin: r.userLogin,
+            targetUserId: r.targetUserId,
+            message: msg,
+          })
+        }
+      }
+    })
+
+    await LoggerService.log(jwtUser!.id, AuditAction.IMPORT_EQUIPO_CREDENTIALS, request, {
+      equipoId,
+      total: data.rows.length,
+      created: succeeded.length,
+      failed: failed.length,
+      grantEquipoAccess,
+    })
+
+    return response.ok({
+      created: succeeded.length,
+      totalAttempted: data.rows.length,
+      succeeded,
+      failed,
+      accessGranted,
+    })
   }
 
   async update({ params, request, response, jwtUser }: HttpContext) {

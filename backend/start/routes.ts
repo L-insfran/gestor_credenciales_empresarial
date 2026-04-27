@@ -79,3 +79,8 @@ router
     ])
   })
   .use([middleware.jwtAuth()])
+
+// Proteger importación masiva: SOLO SUPERADMIN
+router
+  .post('/equipos/:id/credenciales/import', [EquipoCredentialsController, 'importExcel'])
+  .use([middleware.jwtAuth(), middleware.superadmin()])

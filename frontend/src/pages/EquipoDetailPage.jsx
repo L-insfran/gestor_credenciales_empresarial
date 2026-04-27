@@ -453,16 +453,8 @@ export default function EquipoDetailPage() {
   }, [equipo, teamMemberUsers])
 
   /** Usuarios que ya tienen acceso al equipo (y dueño, con acceso implícito) — para import sin degradar ni duplicar */
-  const existingAccessUserIds = useMemo(() => {
-    const ids = new Set((accesses ?? []).map((a) => a.userId))
-    const oid = equipo?.ownerUserId ?? equipo?.owner?.id
-    if (oid) ids.add(oid)
-    return Array.from(ids)
-  }, [accesses, equipo])
-
   const canImportAssignToOthers = Boolean(isSuperadmin || equipo?.canEdit)
   const canGrantEquipoAccessOnImport = Boolean(equipo?.canManageAssignments)
-  const importEquipoOwnerId = equipo?.ownerUserId ?? equipo?.owner?.id ?? null
 
   const filteredAccesses = useMemo(() => {
     const q = accessListSearch.trim().toLowerCase()
@@ -678,13 +670,15 @@ export default function EquipoDetailPage() {
               Editar equipo
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => setImportCredOpen(true)}
-            className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-800 shadow-sm transition hover:bg-indigo-100 dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-indigo-200 dark:hover:bg-indigo-950/60"
-          >
-            Importar Excel
-          </button>
+          {isSuperadmin && (
+            <button
+              type="button"
+              onClick={() => setImportCredOpen(true)}
+              className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-800 shadow-sm transition hover:bg-indigo-100 dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-indigo-200 dark:hover:bg-indigo-950/60"
+            >
+              Importar Excel
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setCredForm({ open: true, initial: null })}
@@ -959,7 +953,7 @@ export default function EquipoDetailPage() {
       />
 
       <EquipoCredentialImportModal
-        open={importCredOpen}
+        open={isSuperadmin && importCredOpen}
         onClose={() => setImportCredOpen(false)}
         onImported={() => loadAll()}
         flash={flash}
@@ -970,8 +964,6 @@ export default function EquipoDetailPage() {
         isSuperadmin={isSuperadmin}
         currentUser={authUser}
         canGrantEquipoAccess={canGrantEquipoAccessOnImport}
-        equipoOwnerId={importEquipoOwnerId}
-        existingAccessUserIds={existingAccessUserIds}
       />
 
       <EquipoAccessForm
