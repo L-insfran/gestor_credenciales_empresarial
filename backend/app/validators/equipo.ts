@@ -1,6 +1,15 @@
 import vine from '@vinejs/vine'
 
-const tipoEnum = ['SERVIDOR', 'ACCESS_POINT', 'IMPRESORA', 'OTRO'] as const
+const tipoEnum = [
+  'SERVIDOR',
+  'ACCESS_POINT',
+  'IMPRESORA',
+  'WIFI',
+  'VM',
+  'ISP',
+  'MANAGEMENT',
+  'OTRO',
+] as const
 
 export const storeEquipoValidator = vine.create({
   nombre: vine.string().trim().minLength(1).maxLength(255),

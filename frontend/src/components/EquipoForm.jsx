@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react'
 
-const TIPOS = ['SERVIDOR', 'ACCESS_POINT', 'IMPRESORA', 'OTRO']
+const TIPOS = [
+  'SERVIDOR',
+  'ACCESS_POINT',
+  'IMPRESORA',
+  'WIFI',
+  'VM',
+  'ISP',
+  'MANAGEMENT',
+  'OTRO',
+]
 
 const empty = {
   nombre: '',

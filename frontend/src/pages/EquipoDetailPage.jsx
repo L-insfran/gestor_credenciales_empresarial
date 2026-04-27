@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api, getApiErrorMessage } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { copyToClipboard } from '../utils/clipboard'
 import EquipoCredentialForm from '../components/EquipoCredentialForm'
 import EquipoCredentialImportModal from '../components/EquipoCredentialImportModal'
 import EquipoAccessForm from '../components/EquipoAccessForm'
@@ -307,7 +308,7 @@ export default function EquipoDetailPage() {
   const togglePwd = (cid) => setVisiblePwd((v) => ({ ...v, [cid]: !v[cid] }))
   const copyPwd = async (pwd) => {
     try {
-      await navigator.clipboard.writeText(pwd)
+      await copyToClipboard(pwd)
       flash('success', 'Copiado al portapapeles')
     } catch {
       flash('error', 'No se pudo copiar')

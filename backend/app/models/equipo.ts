@@ -5,7 +5,15 @@ import User from '#models/user'
 import EquipoAccess from '#models/equipo_access'
 import EquipoCredential from '#models/equipo_credential'
 
-export type EquipoTipo = 'SERVIDOR' | 'ACCESS_POINT' | 'IMPRESORA' | 'OTRO'
+export type EquipoTipo =
+  | 'SERVIDOR'
+  | 'ACCESS_POINT'
+  | 'IMPRESORA'
+  | 'WIFI'
+  | 'VM'
+  | 'ISP'
+  | 'MANAGEMENT'
+  | 'OTRO'
 
 export default class Equipo extends BaseModel {
   static table = 'equipos'

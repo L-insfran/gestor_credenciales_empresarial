@@ -10,6 +10,7 @@ import EquipoForm from '../components/EquipoForm'
 import TwoFactorPanel from '../components/TwoFactorPanel'
 import { api, getApiErrorMessage } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { copyToClipboard } from '../utils/clipboard'
 
 const SECTIONS = ['usuarios', 'equipos', 'credenciales', 'perfil', 'logs']
 
@@ -416,7 +417,7 @@ export default function DashboardPage() {
 
   const copyPwd = async (pwd) => {
     try {
-      await navigator.clipboard.writeText(pwd)
+      await copyToClipboard(pwd)
       flash('success', 'Copiado al portapapeles')
     } catch {
       flash('error', 'No se pudo copiar')
@@ -458,14 +459,26 @@ export default function DashboardPage() {
     const nombre = window.prompt('Nombre del nuevo equipo', c.servicio ?? '')
     if (!nombre) return
     const tipoRaw = window.prompt(
-      'Tipo del equipo (SERVIDOR, ACCESS_POINT, IMPRESORA, OTRO)',
+      'Tipo del equipo (SERVIDOR, ACCESS_POINT, IMPRESORA, WIFI, VM, ISP, MANAGEMENT, OTRO)',
       'OTRO'
     )
     if (tipoRaw === null) return
     const tipo = String(tipoRaw).trim().toUpperCase()
-    const allowed = ['SERVIDOR', 'ACCESS_POINT', 'IMPRESORA', 'OTRO']
+    const allowed = [
+      'SERVIDOR',
+      'ACCESS_POINT',
+      'IMPRESORA',
+      'WIFI',
+      'VM',
+      'ISP',
+      'MANAGEMENT',
+      'OTRO',
+    ]
     if (!allowed.includes(tipo)) {
-      flash('error', 'Tipo inválido. Usá: SERVIDOR, ACCESS_POINT, IMPRESORA u OTRO.')
+      flash(
+        'error',
+        'Tipo inválido. Usá: SERVIDOR, ACCESS_POINT, IMPRESORA, WIFI, VM, ISP, MANAGEMENT u OTRO.'
+      )
       return
     }
     try {
@@ -1139,6 +1152,10 @@ export default function DashboardPage() {
                 <option value="SERVIDOR">SERVIDOR</option>
                 <option value="ACCESS_POINT">ACCESS_POINT</option>
                 <option value="IMPRESORA">IMPRESORA</option>
+                <option value="WIFI">WIFI</option>
+                <option value="VM">VM</option>
+                <option value="ISP">ISP</option>
+                <option value="MANAGEMENT">MANAGEMENT</option>
                 <option value="OTRO">OTRO</option>
               </select>
             </label>
