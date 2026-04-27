@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api, getApiErrorMessage } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { copyToClipboard } from '../utils/clipboard'
@@ -11,6 +11,16 @@ import EquipoForm from '../components/EquipoForm'
 const PWD_MASK = '••••••••'
 const CREDENTIALS_PAGE_SIZE = 30
 const ACCESS_PAGE_SIZE = 30
+const EQUIPOS_FILTERS_STORAGE_KEY = 'gc_equipos_last_search'
+
+function IconArrowLeft({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+      <path d="M19 12H5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
 
 function IconClipboard({ className }) {
   return (
@@ -274,7 +284,30 @@ export default function EquipoDetailPage() {
   const { id } = useParams()
   const equipoId = Number(id)
   const navigate = useNavigate()
+  const location = useLocation()
   const { isSuperadmin, user: authUser } = useAuth()
+
+  const backToEquiposUrl = useMemo(() => {
+    const fromState = location.state?.fromEquiposSearch
+    if (typeof fromState === 'string') {
+      return `/equipos${fromState}`
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = window.sessionStorage.getItem(EQUIPOS_FILTERS_STORAGE_KEY)
+        if (typeof stored === 'string') {
+          return `/equipos${stored}`
+        }
+      } catch {
+        // ignorar errores de storage
+      }
+    }
+    return '/equipos'
+  }, [location.state])
+
+  const goBackToEquipos = useCallback(() => {
+    navigate(backToEquiposUrl)
+  }, [navigate, backToEquiposUrl])
 
   const [equipo, setEquipo] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -558,7 +591,7 @@ export default function EquipoDetailPage() {
     setFormLoading(true)
     try {
       await api.delete(`/equipos/${equipoId}`)
-      navigate('/equipos', { replace: true })
+      navigate(backToEquiposUrl, { replace: true })
     } catch (e) {
       flash('error', getApiErrorMessage(e))
     } finally {
@@ -570,7 +603,7 @@ export default function EquipoDetailPage() {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-surface-700 dark:bg-surface-900">
         <p className="text-slate-600 dark:text-slate-300">ID de equipo inválido.</p>
-        <button type="button" onClick={() => navigate('/equipos')} className="mt-3 text-sm font-semibold text-indigo-600">
+        <button type="button" onClick={goBackToEquipos} className="mt-3 text-sm font-semibold text-indigo-600">
           Volver
         </button>
       </div>
@@ -592,12 +625,26 @@ export default function EquipoDetailPage() {
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs text-slate-500">
-            <Link to="/equipos" className="text-indigo-600 hover:underline dark:text-indigo-400">
-              Equipos
-            </Link>{' '}
-            / #{equipoId}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={goBackToEquipos}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-surface-600 dark:bg-surface-900 dark:text-slate-200 dark:hover:bg-surface-800"
+              title="Volver al listado de equipos"
+            >
+              <IconArrowLeft className="h-3.5 w-3.5" />
+              Volver
+            </button>
+            <p className="text-xs text-slate-500">
+              <Link
+                to={backToEquiposUrl}
+                className="text-indigo-600 hover:underline dark:text-indigo-400"
+              >
+                Equipos
+              </Link>{' '}
+              / #{equipoId}
+            </p>
+          </div>
           <h2 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">
             {equipo?.nombre ?? 'Equipo'}
           </h2>

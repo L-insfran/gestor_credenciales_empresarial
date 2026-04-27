@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const USER_SORT_COLUMNS = ['nombre', 'email', 'role', 'activo']
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -13,6 +13,14 @@ import { useAuth } from '../context/AuthContext'
 import { copyToClipboard } from '../utils/clipboard'
 
 const SECTIONS = ['usuarios', 'equipos', 'credenciales', 'perfil', 'logs']
+
+const EQUIPOS_FILTERS_STORAGE_KEY = 'gc_equipos_last_search'
+
+function clampPerPage(value) {
+  const n = Number(value)
+  if (!Number.isFinite(n) || n <= 0) return 10
+  return Math.min(100, Math.max(1, Math.trunc(n)))
+}
 
 const LOG_ACTION_OPTIONS = [
   '',
@@ -155,7 +163,7 @@ function CredentialRow({
 
 export default function DashboardPage() {
   const { section } = useParams()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const { isSuperadmin, user, refreshUser } = useAuth()
 
@@ -204,13 +212,26 @@ export default function DashboardPage() {
   const [formLoading, setFormLoading] = useState(false)
 
   const [equipos, setEquipos] = useState([])
-  const [equiposPage, setEquiposPage] = useState(1)
-  const [equiposPerPage, setEquiposPerPage] = useState(10)
+  const [equiposPage, setEquiposPage] = useState(() => {
+    if (section !== 'equipos') return 1
+    const n = Number(searchParams.get('page'))
+    return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 1
+  })
+  const [equiposPerPage, setEquiposPerPage] = useState(() => {
+    if (section !== 'equipos') return 10
+    return clampPerPage(searchParams.get('perPage') ?? 10)
+  })
   const [equiposMeta, setEquiposMeta] = useState(null)
   const [equiposLoading, setEquiposLoading] = useState(false)
-  const [equipoFilterNombre, setEquipoFilterNombre] = useState('')
-  const [debouncedEquipoNombre, setDebouncedEquipoNombre] = useState('')
-  const [equipoFilterTipo, setEquipoFilterTipo] = useState('')
+  const [equipoFilterNombre, setEquipoFilterNombre] = useState(() =>
+    section === 'equipos' ? (searchParams.get('q') ?? '') : ''
+  )
+  const [debouncedEquipoNombre, setDebouncedEquipoNombre] = useState(() =>
+    section === 'equipos' ? (searchParams.get('q') ?? '').trim() : ''
+  )
+  const [equipoFilterTipo, setEquipoFilterTipo] = useState(() =>
+    section === 'equipos' ? (searchParams.get('tipo') ?? '') : ''
+  )
 
   const [profileForm, setProfileForm] = useState({
     nombre: '',
@@ -307,7 +328,12 @@ export default function DashboardPage() {
     return () => clearTimeout(t)
   }, [equipoFilterNombre])
 
+  const equipoFilterFirstRunRef = useRef(true)
   useEffect(() => {
+    if (equipoFilterFirstRunRef.current) {
+      equipoFilterFirstRunRef.current = false
+      return
+    }
     setEquiposPage(1)
   }, [debouncedEquipoNombre, equipoFilterTipo])
 
@@ -400,6 +426,37 @@ export default function DashboardPage() {
       loadEquipos()
     }
   }, [section, loadEquipos])
+
+  useEffect(() => {
+    if (section !== 'equipos') return
+    const params = new URLSearchParams()
+    if (debouncedEquipoNombre) params.set('q', debouncedEquipoNombre)
+    if (equipoFilterTipo) params.set('tipo', equipoFilterTipo)
+    if (equiposPage > 1) params.set('page', String(equiposPage))
+    if (equiposPerPage !== 10) params.set('perPage', String(equiposPerPage))
+    const nextSearch = params.toString()
+    if (nextSearch !== searchParams.toString()) {
+      setSearchParams(params, { replace: true })
+    }
+    try {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(
+          EQUIPOS_FILTERS_STORAGE_KEY,
+          nextSearch ? `?${nextSearch}` : ''
+        )
+      }
+    } catch {
+      // ignorar errores de storage
+    }
+  }, [
+    section,
+    debouncedEquipoNombre,
+    equipoFilterTipo,
+    equiposPage,
+    equiposPerPage,
+    searchParams,
+    setSearchParams,
+  ])
 
   if (!section || !SECTIONS.includes(section)) {
     return <Navigate to="/credenciales" replace />
@@ -1171,7 +1228,12 @@ export default function DashboardPage() {
                 <EquipoRow
                   key={e.id}
                   e={e}
-                  onOpen={(row) => navigate(`/equipos/${row.id}`)}
+                  onOpen={(row) => {
+                    const search = searchParams.toString()
+                    navigate(`/equipos/${row.id}`, {
+                      state: { fromEquiposSearch: search ? `?${search}` : '' },
+                    })
+                  }}
                   onSuperadminDelete={isSuperadmin ? onDeleteEquipo : null}
                 />
               ))}
